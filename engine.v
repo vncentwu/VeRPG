@@ -1,4 +1,4 @@
-`timescale 1ps/1ps    
+`timescale 1ms/1ms    
 
 /*
 
@@ -71,6 +71,7 @@ module main();
 
 	always @(posedge clk) begin
 		
+
 		if(top_clear) begin
 			bitmap[current_pos - 10] = 1;
 			if(left_clear)
@@ -106,6 +107,18 @@ module main();
 				1: begin
 					current_pos <= current_pos + 1;
 				end
+				2: begin //left
+					current_pos <= current_pos - 1;
+				end
+				3: begin //up
+					current_pos <= current_pos - 10;
+				end
+				4: begin //down
+					current_pos <= current_pos + 10;
+				end		
+				5: begin //exit
+					$finish;
+				end											
 			endcase
 			eip <= eip + 1;
 		end

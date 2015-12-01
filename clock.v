@@ -1,5 +1,5 @@
 /* clock */
-`timescale 1ps/1ps
+`timescale 1ms/1ms
 module clock(output clk);
     reg theClock = 1;
     reg [15:0] counter = 0;
