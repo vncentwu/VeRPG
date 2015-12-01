@@ -17,11 +17,9 @@ ID Legend:
 module main();
 	initial begin
 
-
-
 		//$dumpfile("cpu.vcd");
 		$readmemh("input.data",input_data);
-		$dumpvars(1,main);
+		//$dumpvars(1,main);
 		for(i = 0; i < 10; i = i + 1) begin
 			for(j = 0; j < 10; j = j + 1) begin
 				case(i*10 + j)
@@ -30,9 +28,6 @@ module main();
 					end
 					59: begin
 						map[i*10 + j] = `EXIT;
-					end
-					55: begin
-						map[i*10 + j] = `CURRENT;
 					end
 					default: begin
 						map[i*10 + j] = 4;
@@ -54,6 +49,7 @@ module main();
 	reg [15:0]input_data[0:99]; //Array of all command data
 	reg [15:0]map[99:0]; //pseudo 10x10 2D array of 16 bit values
 	reg bitmap[99:0]; //Literally a bitmap haha
+	reg display_queued;
 
 	reg [15:0]current_pos = 50;
 
@@ -103,13 +99,26 @@ module main();
 			bitmap[current_pos - 2] = 1;
 
 		if(new_command) begin //prints out current information
+			
+			display_queued <= 1;
 
-			f = $fopen("output.data");
-/*			$fdisplay(f, "test", number);
-			$fdisplay(f, "test", number);
-			$fclose(f);*/
-
+			case(input_data[eip])
+				1: begin
+					current_pos <= current_pos + 1;
+				end
+			endcase
 			eip <= eip + 1;
+		end
+		else begin
+			//for(i = 0; i < 30; i = i + 1)
+				//$display("");
+			$readmemh("input.data",input_data);
+		end
+
+		if(display_queued) begin
+			if(!new_command)
+				display_queued <= 0; 
+			f = $fopen("output.data");
 			$fdisplay(f, "= = = = = = = = = = = = = = = = = = = = =");
 			$fdisplay(f, "");
 			$fdisplay(f, "");
@@ -153,11 +162,6 @@ module main();
 			$fdisplay(f, "");
 			$fdisplay(f, "= = = = = = = = = = = = = = = = = = = = =");
 			$fclose(f);
-		end
-		else begin
-			//for(i = 0; i < 30; i = i + 1)
-				//$display("");
-			//$readmemh("input.data",input_data);
 		end
 	end
 

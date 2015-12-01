@@ -11,7 +11,7 @@ module clock(output clk);
         theClock = !theClock;
         counter = counter + 1;
         if(counter > 1000) begin
-        	$finish;
+        	//$finish;
         end
 
     end
