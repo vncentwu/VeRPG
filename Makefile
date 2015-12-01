@@ -1,13 +1,37 @@
 VFILES=$(wildcard *.v)
 
-cpu : $(VFILES) Makefile
+
+
+engine : $(VFILES) Makefile
 	iverilog -o engine $(VFILES)
+	g++ -o display display.cpp
+
+release: engine prun
 
 clean :
-	rm -rf cpu mem.hex test.ok
+	rm -rf engine
+
+hello :
+	@echo "hello"
+
+mrun : engine run
+
 
 run : 
-	./engine
+	@echo "Running VeRiPG version 1.00.."
+	@ ./engine > output.raw
+	@egrep "^#" output.raw > output.out
+	@cut output.out -c2- > output.final
+	@cat output.final
+
+trun : 
+	@echo "Running VeRiPG version 1.00.."
+	@ ./engine
+
+prun :
+	@echo "Running VeRiPG version 1.00 with display assist.."
+	@ ./engine > /dev/null 2>&1 &
+	@ ./display
 
 test : $(sort $(patsubst %.ok,%,$(wildcard test?.ok)))
 
