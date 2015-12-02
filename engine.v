@@ -13,6 +13,7 @@ ID Legend:
 `define EXIT 3
 `define BLANK 4
 `define WALL 5
+`define ENEMY 6
 
 module main();
 	initial begin
@@ -29,6 +30,8 @@ module main();
 			end
 		end
 
+	/* Copy pasta necessary because verilog 2001 doesn't support > 2D arrays.
+	   Used to load map data from user */
 		for(i = 0; i < 20; i = i+1) begin
 			map[i*20 + 0] = map_data[i][79:76];
 			map[i*20 + 1] = map_data[i][75:72];
@@ -63,6 +66,9 @@ module main();
 	wire clk;
 	clock c0(clk);
 
+	reg[2:0] current_random = 0;
+	reg[2:0] run_random = 0;
+
 	reg [15:0]input_data[0:2000]; //Array of all command data
 	reg [79:0]map_data[0:19]; //used to load up the map
 
@@ -93,6 +99,10 @@ module main();
 	reg [15:0]player_max_health = 100;
 	wire [15:0]player_health_ratio = (player_health * 10 / player_max_health);
 
+	/* Game data */
+	wire on_enemy = map[current_pos] == `ENEMY;
+	reg run_failed = 0;
+
 	/* Settings */
 	reg no_clip = 0;
 	reg no_shroud = 0;
@@ -100,33 +110,39 @@ module main();
 
 	always @(posedge clk) begin
 		
+		//if(1 | ) begin
+			
+       
+		current_random <= $random % 4;
+		run_random <= $random % 3;
+		//end
 
 		if(top_clear) begin
-			bitmap[current_pos - 20] = 1;
+			bitmap[current_pos - 20] <= 1;
 			if(left_clear)
-				bitmap[current_pos - 20 - 1] = 1;
+				bitmap[current_pos - 20 - 1] <= 1;
 			if(right_clear)
-				bitmap[current_pos - 20 + 1] = 1;
+				bitmap[current_pos - 20 + 1] <= 1;
 		end
 		if(top_2_clear)
-			bitmap[current_pos - 40] = 1;			
+			bitmap[current_pos - 40] <= 1;			
 		if(bottom_clear) begin
-			bitmap[current_pos + 20] = 1;
+			bitmap[current_pos + 20] <= 1;
 			if(left_clear)
-				bitmap[current_pos + 20 - 1] = 1;
+				bitmap[current_pos + 20 - 1] <= 1;
 			if(right_clear)
-				bitmap[current_pos + 20 + 1] = 1;			
+				bitmap[current_pos + 20 + 1] <= 1;			
 		end
 		if(bottom_2_clear)
-			bitmap[current_pos + 40] = 1;
+			bitmap[current_pos + 40] <= 1;
 		if(right_clear)
-			bitmap[current_pos + 1] = 1;
+			bitmap[current_pos + 1] <= 1;
 		if(right_2_clear)
-			bitmap[current_pos + 2] = 1;			
+			bitmap[current_pos + 2] <= 1;			
 		if(left_clear)
-			bitmap[current_pos - 1] = 1;
+			bitmap[current_pos - 1] <= 1;
 		if(left_2_clear)
-			bitmap[current_pos - 2] = 1;
+			bitmap[current_pos - 2] <= 1;
 
 		if(new_command) begin //prints out current information
 			display_queued <= 1;
@@ -146,7 +162,36 @@ module main();
 				4: begin //down
 					if(current_pos + 20 < 400 & map[current_pos + 20] != 5)
 						current_pos <= current_pos + 20;
-				end		
+				end
+				5: begin //attack
+					player_health <= player_health - 10;
+				end	
+				6: begin //run
+					if(run_random > 0) begin
+						case(current_random)
+						0: begin //right
+							if (current_pos + 1 > 0 && (current_pos + 1) % 20 > current_pos % 20 && map[current_pos + 1] != 5)
+								current_pos <= current_pos + 1;
+						end
+						1: begin //left
+							if (current_pos - 1 > 0 && (current_pos - 1) % 20 < current_pos % 20 && map[current_pos - 1] != 5)
+								current_pos <= current_pos - 1;
+						end
+						2: begin //up
+							if(current_pos - 20 > 0 & map[current_pos - 20] != 5)
+								current_pos <= current_pos - 20;
+						end
+						3: begin //down
+							if(current_pos + 20 < 400 & map[current_pos + 20] != 5)
+								current_pos <= current_pos + 20;
+						end
+						endcase
+					end
+					else begin
+						run_failed <= 1;
+					end
+
+				end												
 				16'h10: begin //exit
 					no_shroud <= !no_shroud;
 					$display("No shroud");
@@ -161,49 +206,80 @@ module main();
 			$readmemh("input.data",input_data);
 		end
 		if(display_queued) begin
+
+
+
 			if(!new_command)
 				display_queued <= 0; 
 			f = $fopen("output.data");
-			$fdisplay(f, "\n\n");
-			for(i = 0; i < 20; i = i + 1) begin
-				$fwrite(f, "");
-				for(j = 0; j < 20; j = j + 1) begin
-					if(current_pos == i*20 + j) begin
-						$fwrite(f, "! " );
-					end
-					else if(bitmap[i*20 + j] == 0 && no_shroud == 0) begin
-						$fwrite(f, "? " );
-					end
-					else begin
-						case(map[i*20 + j])
-							`CURRENT: begin
-								$fwrite(f, "! ");
-							end
-							`ENTRANCE: begin
-								$fwrite(f, "< ");
-							end
-							`EXIT: begin
-								$fwrite(f, "> ");
-							end		
-							`BLANK: begin
-								$fwrite(f, "  ");
-							end
-							`WALL: begin
-								$fwrite(f, "X ");
-							end												
-						endcase							
-					end
-				end
-				$fdisplay(f, "");
-			end	
-			$fwrite(f, "\nHP: [%d/%d]", player_health, player_max_health);
+			
+			if(run_failed) begin
+				$fdisplay(f, "RUN FAILED");
+				run_failed <= 0;
+			end
 
+			$fdisplay(f, "cr %d", current_random);
+			$fdisplay(f, "rr %d", current_random);
+
+			if(on_enemy) begin //draw enemy if reached enemy
+				 $fdisplay(f, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+				 $fdisplay(f, "               EVENT: You have encountered an enemy!");
+				 $fdisplay(f, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+				 $fdisplay(f,"                   ,===:'.,            `-._ \n                    `:.`---.__         `-._   \n                      `:.     `--.         `.   \n                        \\.        `.         `.   \n                (,,(,    \\.         `.   ____,-`.,  \n             (,'     `/   \\.   ,--.___`.'   \n         ,  ,'  ,--.  `,   \\.;'         `   \n          `{D, {    \\  :    \\;   \n            V,,'    /  /    //   \n            j;;    /  ,' ,-//.    ,---.      ,  \n            \\;'   /  ,' /  _  \\  /  _  \\   ,'/  \n                  \\   `'  / \\  `'  / \\  `.' /   \n                   `.___,'   `.__,'   `.__,'  	\n"         );
+			end
+			else begin
+				 $fdisplay(f, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+				 $fdisplay(f, "               MAP: Dungeon of Illore");
+				 $fdisplay(f, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+				for(i = 0; i < 20; i = i + 1) begin
+					$fwrite(f, "");
+					for(j = 0; j < 20; j = j + 1) begin
+						if(current_pos == i*20 + j) begin
+							$fwrite(f, "! " );
+						end
+						else if(bitmap[i*20 + j] == 0 && no_shroud == 0) begin
+							$fwrite(f, "? " );
+						end
+						else begin
+							case(map[i*20 + j])
+								`CURRENT: begin
+									$fwrite(f, "! ");
+								end
+								`ENTRANCE: begin
+									$fwrite(f, "< ");
+								end
+								`EXIT: begin
+									$fwrite(f, "> ");
+								end		
+								`BLANK: begin
+									$fwrite(f, "  ");
+								end
+								`WALL: begin
+									$fwrite(f, "X ");
+								end	
+								`ENEMY: begin
+									$fwrite(f, "@ ");
+								end																			
+							endcase							
+						end
+					end
+					$fdisplay(f, "");
+				end
+			end
+			$fwrite(f, "\nHP: [%d/%d]\n", player_health, player_max_health);
+
+			if(on_enemy) begin
+				$fwrite(f, "\nEnemy HP: [%d/%d]", player_health, player_max_health);
+			end
 			/* Writing allowed commands */
 			$fdisplay(f, "\n");
-			if(can_move)
+			if(can_move & !on_enemy)
 				$fwrite(f, "[1] - Right    [2] - Left    [3] - Up    [4] - Down    ");
+			if(on_enemy)
+				$fwrite(f, "[5] - Attack    [6] - Run    ");
 			if(can_hacks)
 				$fwrite(f, "[10] - No shroud    ");
+
 			$fdisplay(f, "\n");
 			$fclose(f);
 		end

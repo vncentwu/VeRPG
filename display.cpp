@@ -14,25 +14,25 @@ void print_map();
 
 int main (){
 
-	char data[100];
+	char data[100] = "2";
 	usleep(2 * 1000 * 100);
 	print_map();
 	while(1)
 	{
 		cout << "> ";
 		cin.getline(data, 100);
-		for(int i = 0; i < 30; i++)
-			cout << endl;
 		file.open("input.data", std::ios::app); //appends to end of file
 		file << data << endl;
 		file.close();
-		usleep(2 * 100 * 100);
+		usleep(4 * 1000 * 100);
 		print_map();
 	}
 }
 
 void print_map()
 {
+	for(int i = 0; i < 30; i++)
+	cout << endl;
 	output.open("output.data");
 	if(output.fail())
 		cout << "Opening output data file failed." << endl;
