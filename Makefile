@@ -6,10 +6,10 @@ engine : $(VFILES) Makefile
 	iverilog -o engine $(VFILES)
 	g++ -o display display.cpp
 
-release: engine prun
+release: clean engine prun
 
 clean :
-	rm -rf engine
+	rm -rf engine display
 
 hello :
 	@echo "hello"
