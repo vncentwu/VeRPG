@@ -72,8 +72,8 @@ module main();
 	reg [15:0]input_data[0:2000]; //Array of all command data
 	reg [79:0]map_data[0:19]; //used to load up the map
 
-	reg [15:0]map[399:0]; //pseudo 10x10 2D array of 16 bit values
-	reg bitmap[399:0]; //Literally a bitmap haha
+	reg [15:0]map[1000:0]; //pseudo 10x10 2D array of 16 bit values
+	reg bitmap[1000:0]; //Literally a bitmap haha
 	reg display_queued = 1;
 
 	reg [15:0]current_pos = 50;
@@ -109,8 +109,6 @@ module main();
 	reg godmode = 0;
 
 	always @(posedge clk) begin
-		
-		//if(1 | ) begin
 			
        
 		current_random <= $random % 4;
@@ -148,20 +146,24 @@ module main();
 			display_queued <= 1;
 			case(input_data[eip])
 				1: begin
-					if (current_pos + 1 > 0 && (current_pos + 1) % 20 > current_pos % 20 && map[current_pos + 1] != 5)
-						current_pos <= current_pos + 1;
+					if (current_pos + 1 > 0 && (current_pos + 1) % 20 > current_pos % 20)
+						if(map[current_pos + 1] != 5)
+							current_pos <= current_pos + 1;
 				end
 				2: begin //le
-					if (current_pos - 1 > 0 && (current_pos - 1) % 20 < current_pos % 20 && map[current_pos - 1] != 5)
-						current_pos <= current_pos - 1;
+					if (current_pos - 1 > 0 && (current_pos - 1) % 20 < current_pos % 20)
+						if(map[current_pos - 1] != 5)
+							current_pos <= current_pos - 1;
 				end
 				3: begin //up
-					if(current_pos - 20 > 0 & map[current_pos - 20] != 5)
-						current_pos <= current_pos - 20;
+					if(current_pos - 20 > 0)
+						if(map[current_pos - 20] != 5)
+							current_pos <= current_pos - 20;
 				end
 				4: begin //down
-					if(current_pos + 20 < 400 & map[current_pos + 20] != 5)
-						current_pos <= current_pos + 20;
+					if(current_pos + 20 < 400)
+						if(map[current_pos + 20] != 5)
+							current_pos <= current_pos + 20;
 				end
 				5: begin //attack
 					player_health <= player_health - 10;
@@ -170,12 +172,14 @@ module main();
 					if(run_random > 0) begin
 						case(current_random)
 						0: begin //right
-							if (current_pos + 1 > 0 && (current_pos + 1) % 20 > current_pos % 20 && map[current_pos + 1] != 5)
-								current_pos <= current_pos + 1;
+							if (current_pos + 1 > 0 && (current_pos + 1) % 20 > current_pos % 20)
+								if(map[current_pos + 1] != 5)
+									current_pos <= current_pos + 1;
 						end
 						1: begin //left
-							if (current_pos - 1 > 0 && (current_pos - 1) % 20 < current_pos % 20 && map[current_pos - 1] != 5)
-								current_pos <= current_pos - 1;
+							if (current_pos - 1 > 0 && (current_pos - 1) % 20 < current_pos % 20)
+								if(map[current_pos - 1] != 5)
+									current_pos <= current_pos - 1;
 						end
 						2: begin //up
 							if(current_pos - 20 > 0 & map[current_pos - 20] != 5)
@@ -207,8 +211,6 @@ module main();
 		end
 		if(display_queued) begin
 
-
-
 			if(!new_command)
 				display_queued <= 0; 
 			f = $fopen("output.data");
@@ -218,8 +220,14 @@ module main();
 				run_failed <= 0;
 			end
 
-			$fdisplay(f, "cr %d", current_random);
-			$fdisplay(f, "rr %d", current_random);
+			for(i = 0; i < 20; i = i + 1) begin
+				for(j = 0; j < 20; j = j + 1) begin
+					$fwrite(f, "%d ", bitmap[i*20 + j]);
+				end
+				$fdisplay(f, "");
+			end
+			$fdisplay(f, "current pos: %d", current_pos);
+			$fdisplay(f, $time, "is current time.");
 
 			if(on_enemy) begin //draw enemy if reached enemy
 				 $fdisplay(f, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -267,6 +275,10 @@ module main();
 				end
 			end
 			$fwrite(f, "\nHP: [%d/%d]\n", player_health, player_max_health);
+			$fwrite(f, "\nNO_SHROUD: [%d]\n", no_shroud);
+
+
+
 
 			if(on_enemy) begin
 				$fwrite(f, "\nEnemy HP: [%d/%d]", player_health, player_max_health);

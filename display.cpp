@@ -4,6 +4,9 @@ prints the content to screen. The rest is handled by the engine hardware*/
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 using namespace std;
 
@@ -11,22 +14,42 @@ ofstream file;
 ifstream output;
 
 void print_map();
+void assign_random();
+char data[2];
 
 int main (){
-
-	char data[100] = "2";
 	usleep(2 * 1000 * 100);
 	print_map();
 	while(1)
 	{
+		//sleep(2);
 		cout << "> ";
-		cin.getline(data, 100);
+		cin.getline(data, 2);
 		file.open("input.data", std::ios::app); //appends to end of file
 		file << data << endl;
+/*		srand(time(NULL));
+		int r = rand() % 4;
+		cout << "r is: " << r << endl;
+		switch(r)
+		{
+			case 0:
+				file << "1" << endl;
+			case 1:
+				file << "2" << endl;
+			case 2:
+				file << "3" << endl;
+			case 3:
+				file << "4" << endl;
+		}*/
 		file.close();
 		usleep(4 * 1000 * 100);
 		print_map();
 	}
+}
+
+void assign_random()
+{
+
 }
 
 void print_map()
