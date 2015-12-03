@@ -8,6 +8,7 @@ engine : $(VFILES) Makefile
 
 release: init clean engine display prun
 
+debug: init clean engine display wrun
 
 clean :
 	rm -rf engine display
@@ -31,6 +32,11 @@ trun :
 prun :
 	@echo ">> Running VeRiPG version 1.00 with display assist <<"
 	@ ./engine | grep -v "^WARNING" &
+	@ ./display
+
+wrun :
+	@echo ">> Running VeRiPG version 1.00 with display assist <<"
+	@ ./engine &
 	@ ./display
 
 test : $(sort $(patsubst %.ok,%,$(wildcard test?.ok)))

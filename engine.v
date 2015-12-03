@@ -10,6 +10,7 @@
 `define WALL 5
 `define ENEMY 6  //gets mapped to a random enemy
 `define WEAPON 7 //gets mapped to a random weapon
+`define ITEM 8 //gets mapped to a random item
 
 /* Weapon IDs - reserved 10-20*/
 `define RUSTY_KNIFE 10
@@ -83,15 +84,36 @@ module main();
 			map[i*20 + 19] = map_data[i][3:0];
 		end
 
-		//initialize bitmap to 0, and assigns random values to weapons and enemies
+		//initialize bitmap to 0
 		for(i = 0; i < 20; i = i + 1) begin
 			for(j = 0; j < 20; j = j + 1) begin
 				bitmap[i*20 + j] = 0;
-				if(map[i*20 + j] == `WEAPON)
-					map[i*20 + j] = random_weapon;
+/*				if(i*20 + j < 200| map[i*20 + j] == `ENEMY) begin
+					//enemy_map[i*20 + j][31:28] = ((i * 20 + j) % 10) + 10; //type
+					enemy_map[i*20 + j][31:28] = 1; //type
+					$display("assigned type of %d",enemy_map[i*20+j][31:28] - 10);
+					//$display("assigned type of %d to pos ", ((i * 20 + j) % 10) + 10, i*20 + j);
 					
+					enemy_map[i*20 + j][27:20] = player_level * enemy_health_modifier + random_50; //health
+					enemy_map[i*20 + j][19:12] = player_level * enemy_health_modifier + random_50; //max health	
+					enemy_map[i*20 + j][11:4] = player_level * enemy_damage_modifier + random_10; //damage
+					enemy_map[i*20 + j][3:0] = `ITEM; //drop					
+				end*/
+			
 			end
 		end
+
+		for(i = 0;i < 200; i = i+1) begin
+			//enemy_map[i] = 3;
+			if(i<200)
+				$display("storing at location i %d, %d ", i, i%10);
+			enemy_map[i][39:32] <= (i%10); //type		
+			enemy_map[i][31:24] <= 25; //health
+			enemy_map[i][23:16] <= 25; //max health	
+			enemy_map[i][15:8] <= 25; //damage
+			enemy_map[i][7:0] <= `ITEM; //drop	
+		end
+			
 
 	end
 
@@ -102,18 +124,20 @@ module main();
 
 	/* Multi-purpose values - Saves wire clutter*/
 	integer f, number;
-	reg[15:0]i; 
-	reg[15:0]j;
+	reg[7:0]i; 
+	reg[7:0]j;
 
 	/* Enemy logic */ //4 bit for type, 8 bit for health, 8 bit for max health, 8 bit for damage, 4 bit for item drop
-	reg [31:0]enemy_map[1000:0]; //map of enemies
+	reg [39:0]enemy_map[0:1000]; //map of enemies
 	wire is_current_enemy = !(^current_enemy === 1'bx);
 	wire [31:0]current_enemy = enemy_map[current_pos];
-	wire [3:0]current_enemy_type = current_enemy[31:28];
-	wire [3:0]current_enemy_health = current_enemy[27:20];
-	wire [3:0]current_enemy_max_health = current_enemy[19:12];
-	wire [3:0]current_enemy_damage = current_enemy[11:4];
-	wire [3:0]current_enemy_drop = current_enemy[3:0];
+	wire [8:0]current_enemy_type = current_enemy[39:32];
+	wire [8:0]current_enemy_health = current_enemy[31:24];
+	wire [8:0]current_enemy_max_health = current_enemy[23:16];
+	wire [8:0]current_enemy_damage = current_enemy[15:8];
+	wire [8:0]current_enemy_drop = current_enemy[7:0];
+
+
 
 	/* Map information */
 	reg [15:0]current_pos = 50;
@@ -130,6 +154,7 @@ module main();
 	reg [15:0]player_health = 100;
 	reg [15:0]player_max_health = 100;
 	wire [15:0]player_health_ratio = (player_health * 10 / player_max_health);
+	reg [15:0]player_level = 1;
 
 	/* Game data */
 	wire on_enemy = map[current_pos] == `ENEMY;
@@ -154,6 +179,7 @@ module main();
 	reg [79:0]map_data[0:19]; //used to load up the map
 	reg [15:0]map[1000:0]; //pseudo 10x10 2D array of 16 bit values
 	reg bitmap[1000:0]; //Literally a bitmap haha
+	reg booting = 1;
 
 	/* Random logic - random simulated by current clock cycle*/
 	reg[15:0] random_weapon = 10;
@@ -161,14 +187,26 @@ module main();
 	reg[15:0] random_3 = 0;
 	reg[15:0] random_4 = 0;
 	reg[15:0] random_10 = 0;
+	reg[15:0] random_50 = 0;
 	reg help_requested = 0;
 	reg[2:0] current_random = 0;
 	reg[2:0] run_random = 0;
 
-
+	/* Game constants */
+	reg[15:0] enemy_health_modifier = 20;
+	reg[15:0] enemy_damage_modifier = 3;
 
 	always @(posedge clk) begin
 			
+		if(booting) begin
+			$display("Testing out location 196 %x", enemy_map[i*20+j][39:32]);
+			$display("Testing out location 196 fukll %x", enemy_map[196]);
+			booting <= 0;
+		end
+
+		//$display("Testing out location 196 fukll %x", enemy_map[i*20+j]);
+
+
 		/* Random logic */
 		if(random_3 == 2)
 			random_3 <= 0;
@@ -182,8 +220,12 @@ module main();
 			random_10 <= 0;
 		else 
 			random_10 <= random_10 + 1;	
-       random_weapon <= (random_10) + 10;
-       random_enemy <= (random_10) + 20;
+		if(random_50 == 49)
+			random_50 <= 0;
+		else 
+			random_50 <= random_50 + 1;		
+        random_weapon <= (random_10) + 10;
+        random_enemy <= (random_10) + 20;
 		current_random <= random_4;
 		run_random <= random_3;
 
@@ -320,7 +362,7 @@ module main();
 			end
 			else begin
 				 $display("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-				 $display("               MAP: Dungeon of Illore");
+				 $display("               MAP: Ashushat");
 				 $display("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 				for(i = 0; i < 20; i = i + 1) begin
 					$write("");
@@ -349,10 +391,13 @@ module main();
 									$write("X ");
 								end	
 								`ENEMY: begin
+									//$write("\nenemy type %d ", 20);
+									//$write("%x ", enemy_map[i*20+j][35:32]);
 									$write("@ ");
+									//$write("\nlocation: %d ", i*20 + j);
 								end	
 								`WEAPON: begin
-									$write("@ ");
+									$write("# ");
 								end																											
 							endcase							
 						end
