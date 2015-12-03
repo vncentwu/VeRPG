@@ -15,7 +15,7 @@ ifstream output;
 
 void print_map();
 void assign_random();
-char data[2];
+char data[3];
 
 int main (){
 	usleep(2 * 1000 * 100);
@@ -24,7 +24,7 @@ int main (){
 	{
 		//sleep(2);
 		cout << "> ";
-		cin.getline(data, 2);
+		cin.getline(data, 3);
 		file.open("input.data", std::ios::app); //appends to end of file
 		file << data << endl;
 /*		srand(time(NULL));

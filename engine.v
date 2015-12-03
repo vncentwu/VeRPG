@@ -218,83 +218,83 @@ module main();
 			f = $fopen("output.data");
 			
 			if(run_failed) begin
-				$fdisplay(f, "RUN FAILED");
+				$display("RUN FAILED");
 				run_failed <= 0;
 			end
 
 			for(i = 0; i < 20; i = i + 1) begin
 				for(j = 0; j < 20; j = j + 1) begin
-					$fwrite(f, "%d ", bitmap[i*20 + j]);
+					$write("%d ", bitmap[i*20 + j]);
 				end
-				$fdisplay(f, "");
+				$display("");
 			end
-			$fdisplay(f, "current pos: %d", current_pos);
-			$fdisplay(f, $time, "is current time.");
+			$display("current pos: %d", current_pos);
+			$display($time, "is current time.");
 
 			if(on_enemy) begin //draw enemy if reached enemy
-				 $fdisplay(f, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-				 $fdisplay(f, "               EVENT: You have encountered an enemy!");
-				 $fdisplay(f, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-				 $fdisplay(f,"                   ,===:'.,            `-._ \n                    `:.`---.__         `-._   \n                      `:.     `--.         `.   \n                        \\.        `.         `.   \n                (,,(,    \\.         `.   ____,-`.,  \n             (,'     `/   \\.   ,--.___`.'   \n         ,  ,'  ,--.  `,   \\.;'         `   \n          `{D, {    \\  :    \\;   \n            V,,'    /  /    //   \n            j;;    /  ,' ,-//.    ,---.      ,  \n            \\;'   /  ,' /  _  \\  /  _  \\   ,'/  \n                  \\   `'  / \\  `'  / \\  `.' /   \n                   `.___,'   `.__,'   `.__,'  	\n"         );
+				 $display("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+				 $display("               EVENT: You have encountered an enemy!");
+				 $display("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+				 $display("                   ,===:'.,            `-._ \n                    `:.`---.__         `-._   \n                      `:.     `--.         `.   \n                        \\.        `.         `.   \n                (,,(,    \\.         `.   ____,-`.,  \n             (,'     `/   \\.   ,--.___`.'   \n         ,  ,'  ,--.  `,   \\.;'         `   \n          `{D, {    \\  :    \\;   \n            V,,'    /  /    //   \n            j;;    /  ,' ,-//.    ,---.      ,  \n            \\;'   /  ,' /  _  \\  /  _  \\   ,'/  \n                  \\   `'  / \\  `'  / \\  `.' /   \n                   `.___,'   `.__,'   `.__,'  	\n"         );
 			end
 			else begin
-				 $fdisplay(f, "\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-				 $fdisplay(f, "               MAP: Dungeon of Illore");
-				 $fdisplay(f, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+				 $display("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+				 $display("               MAP: Dungeon of Illore");
+				 $display("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 				for(i = 0; i < 20; i = i + 1) begin
-					$fwrite(f, "");
+					$write("");
 					for(j = 0; j < 20; j = j + 1) begin
 						if(current_pos == i*20 + j) begin
-							$fwrite(f, "! " );
+							$write("! " );
 						end
 						else if(bitmap[i*20 + j] == 0 && no_shroud == 0) begin
-							$fwrite(f, "? " );
+							$write("? " );
 						end
 						else begin
 							case(map[i*20 + j])
 								`CURRENT: begin
-									$fwrite(f, "! ");
+									$write("! ");
 								end
 								`ENTRANCE: begin
-									$fwrite(f, "< ");
+									$write("< ");
 								end
 								`EXIT: begin
-									$fwrite(f, "> ");
+									$write("> ");
 								end		
 								`BLANK: begin
-									$fwrite(f, "  ");
+									$write("  ");
 								end
 								`WALL: begin
-									$fwrite(f, "X ");
+									$write("X ");
 								end	
 								`ENEMY: begin
-									$fwrite(f, "@ ");
+									$write("@ ");
 								end																			
 							endcase							
 						end
 					end
-					$fdisplay(f, "");
+					$display("");
 				end
 			end
-			$fwrite(f, "\nHP: [%d/%d]\n", player_health, player_max_health);
-			$fwrite(f, "\nNO_SHROUD: [%d]\n", no_shroud);
+			$write("\nHP: [%d/%d]\n", player_health, player_max_health);
+			$write("\nNO_SHROUD: [%d]\n", no_shroud);
 
 
 
 
 			if(on_enemy) begin
-				$fwrite(f, "\nEnemy HP: [%d/%d]", player_health, player_max_health);
+				$write("\nEnemy HP: [%d/%d]", player_health, player_max_health);
 			end
 			/* Writing allowed commands */
-			$fdisplay(f, "\n");
+			$display("\n");
 			if(can_move & !on_enemy)
-				$fwrite(f, "[1] - Right    [2] - Left    [3] - Up    [4] - Down    ");
+				$write("[1] - Right    [2] - Left    [3] - Up    [4] - Down    ");
 			if(on_enemy)
-				$fwrite(f, "[5] - Attack    [6] - Run    ");
+				$write("[5] - Attack    [6] - Run    ");
 			if(can_hacks)
-				$fwrite(f, "[10] - No shroud    ");
+				$write("[10] - No shroud    ");
 
-			$fdisplay(f, "\n");
+			$display("\n");
 			$fclose(f);
 		end
 	end
