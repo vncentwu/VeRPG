@@ -7,7 +7,7 @@ module clock(output clk);
     assign clk = theClock;
     
     always begin
-        #500;
+        #5000;
         theClock = !theClock;
         counter = counter + 1;
         if(counter > 1000) begin

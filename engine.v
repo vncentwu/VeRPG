@@ -1,4 +1,4 @@
-`timescale 1ms/1ms    
+`timescale 1s/1ms    
 
 /*
 
@@ -211,8 +211,6 @@ module main();
 		end
 		if(display_queued) begin
 
-			$display("wiejfoweifjweif");
-
 			if(!new_command)
 				display_queued <= 0; 
 			f = $fopen("output.data");
@@ -222,14 +220,20 @@ module main();
 				run_failed <= 0;
 			end
 
-			for(i = 0; i < 20; i = i + 1) begin
+/*			for(i = 0; i < 20; i = i + 1) begin
 				for(j = 0; j < 20; j = j + 1) begin
 					$write("%d ", bitmap[i*20 + j]);
 				end
 				$display("");
 			end
 			$display("current pos: %d", current_pos);
-			$display($time, "is current time.");
+			$display($time, "is current time.");*/
+
+
+			for(j = 0; j < 20; j = j + 1) begin
+				$display("\n");
+			end
+				
 
 			if(on_enemy) begin //draw enemy if reached enemy
 				 $display("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -277,7 +281,7 @@ module main();
 				end
 			end
 			$write("\nHP: [%d/%d]\n", player_health, player_max_health);
-			$write("\nNO_SHROUD: [%d]\n", no_shroud);
+			//$write("\nNO_SHROUD: [%d]\n", no_shroud);
 
 
 

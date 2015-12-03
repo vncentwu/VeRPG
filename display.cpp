@@ -42,7 +42,7 @@ int main (){
 				file << "4" << endl;
 		}*/
 		file.close();
-		usleep(4 * 1000 * 100);
+		usleep(2 * 1000 * 100);
 		//print_map();
 	}
 }
