@@ -207,7 +207,7 @@ module main();
 		end
 		if(display_queued) begin
 
-
+			$display("wiejfoweifjweif");
 
 			if(!new_command)
 				display_queued <= 0; 

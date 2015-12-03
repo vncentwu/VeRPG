@@ -6,7 +6,7 @@ engine : $(VFILES) Makefile
 	iverilog -o engine $(VFILES)
 	g++ -o display display.cpp
 
-release: init clean engine prun
+release: init clean engine display prun
 
 
 clean :
@@ -26,11 +26,11 @@ run :
 
 trun : 
 	@echo "Running VeRiPG version 1.00.."
-	@ ./engine
+	@ ./engine 1 | grep -Ev "^WARNING|^ERROR"
 
 prun :
 	@echo ">> Running VeRiPG version 1.00 with display assist <<"
-	@ ./engine > /dev/null 2>&1 &
+	@ ./engine | grep -v "^WARNING" &
 	@ ./display
 
 test : $(sort $(patsubst %.ok,%,$(wildcard test?.ok)))

@@ -16,7 +16,7 @@ int main (){
 
 	char data[100] = "2";
 	usleep(2 * 1000 * 100);
-	print_map();
+	//print_map();
 	while(1)
 	{
 		cout << "> ";
@@ -25,7 +25,7 @@ int main (){
 		file << data << endl;
 		file.close();
 		usleep(4 * 1000 * 100);
-		print_map();
+		//print_map();
 	}
 }
 
@@ -46,3 +46,24 @@ void print_map()
 	}	
 	output.close();
 }
+
+/*void print_map_clean()
+{
+	 ifstream fin; // Initialise filestream object. 
+	 char c; 
+	 fin.open("test.txt", ios::in); // Open an input filestream. 
+	 // Check if file opened. 
+	 // fin.fail() returns 1 if there is a fail in the filestream. 
+	 if(fin.fail()) 
+	 { 
+	 cout << "Error: Unable to open test.c.\n"; 
+	 exit(1); 
+	 } 
+	 fin.get(c); // Get first character for kicks. 
+	 // While the stream hasn't failed or reached the end of file, read and display. 
+	 while(!fin.fail() && !fin.eof()) 
+	 { 
+	 	cout << c; // Display character. 
+	 	fin.get(c); // Get the next character from the stream. 
+	 } fin.close(); // - See more at: https://www.gidforums.com/t-5188.html#sthash.V6ZFBLQm.dpuf
+}*/
