@@ -5,7 +5,7 @@
 `define UNKNOWN 0
 `define CURRENT 1
 `define ENTRANCE 2
-`define EXIT 3
+`define MAP_EXIT 3
 `define BLANK 4
 `define WALL 5
 `define ENEMY 6  //gets mapped to a random enemy
@@ -91,11 +91,13 @@ module main();
 				bitmap[i*20 + j] = 0;		
 			end
 		end
-		for(i = 0;i < 200; i = i+1) begin
+		for(i = 0;i < 400; i = i+1) begin
 			if(i<200)
 				$display("storing at location i %d, %d ", i, i%10);
+
 			enemy_map[i][39:32] <= (i%10); //type		
 			enemy_map[i][31:24] <= 25 + (i%25); //health
+			$display("attempting to assign health: %d to %d", 25 + (i%25), i);
 			enemy_map[i][23:16] <= 25 + (i%25); //max health	
 			enemy_map[i][15:8] <= 5 + (i%3); //damage
 			//enemy_map[i][31:24] <= 25; //health
@@ -112,7 +114,7 @@ module main();
 
 	/* Multi-purpose values - Saves wire clutter*/
 	integer f, number;
-	reg[7:0]i; 
+	reg[9:0]i; 
 	reg[7:0]j;
 
 	/* Enemy logic */ //4 bit for type, 8 bit for health, 8 bit for max health, 8 bit for damage, 4 bit for item drop
@@ -129,6 +131,8 @@ module main();
 
 	/* Map information */
 	reg [15:0]current_pos = 50;
+	wire[15:0]x_coord = current_pos % 20;
+	wire[15:0]y_coord = (current_pos - (current_pos % 20)) / 20;
 	wire left_clear = (current_pos - 1 > 0 && (current_pos - 1) % 20 < current_pos % 20);
 	wire left_2_clear = (current_pos - 2 > 0 && (current_pos - 2) % 20 < current_pos % 20);
 	wire right_clear = (current_pos + 1 < 400 && (current_pos + 1) % 20 > current_pos % 20);
@@ -137,6 +141,8 @@ module main();
 	wire top_2_clear = (current_pos - 40 > 0);
 	wire bottom_clear = (current_pos + 20 < 400);
 	wire bottom_2_clear = (current_pos + 40 < 400);
+	reg[15:0]map_size = 9;
+	wire[15:0]map_constant = (map_size - 1) / 2;
 
 	/* Player information */
 	reg [15:0]player_health = 100;
@@ -251,9 +257,21 @@ module main();
 			help_requested <= 0;
 		end
 		else if(new_command) begin //prints out current information
+
+			$display("xcord: %d ", x_coord);
+			$display("ycord: %d ", y_coord);
+
 			display_queued <= 1;
-			if(on_enemy) begin
-				player_health <= player_health - current_enemy_damage;
+			if(on_enemy) begin //if fighting an enemy
+				if(player_health <= current_enemy_damage) begin
+					$display("\n\nOh no! You have died. You finished the game at level %d! Better luck next time.", player_level);
+					$display("Plans to implement respawning later...");
+					$finish;
+				end
+				else begin
+					player_health <= player_health - current_enemy_damage;
+				end
+				
 			end
 			$display("current command: %d", current_command);
 			case(input_data[eip])
@@ -281,15 +299,15 @@ module main();
 					if(enemy_map[current_pos][31:24] <= player_damage) begin //if kill, remove and update
 						enemy_map[current_pos] <= 0;
 						map[current_pos] <= `BLANK;
-						if(player_exp + 25 * player_level >= player_next_exp) begin //level up
-							player_exp <= player_exp + 25 * player_level - player_next_exp;
+						if(player_exp + enemy_map[current_pos][23:16] >= player_next_exp) begin //level up
+							player_exp <= player_exp + enemy_map[current_pos][23:16] - player_next_exp; //exp proportional to enemy hp
 							player_level <= player_level + 1;
 							player_damage <= player_damage + player_level * 2;
 							player_max_health <= player_max_health + player_level * 10;
 							player_health <= player_health + player_level * 10;
 						end
 						else begin
-							player_exp <= player_exp +  25 * player_level;
+							player_exp <= player_exp +  enemy_map[current_pos][23:16];
 						end
 					end
 					else
@@ -374,7 +392,7 @@ module main();
 				$display("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 				$display("                   ,===:'.,            `-._ \n                    `:.`---.__         `-._   \n                      `:.     `--.         `.   \n                        \\.        `.         `.   \n                (,,(,    \\.         `.   ____,-`.,  \n             (,'     `/   \\.   ,--.___`.'   \n         ,  ,'  ,--.  `,   \\.;'         `   \n          `{D, {    \\  :    \\;   \n            V,,'    /  /    //   \n            j;;    /  ,' ,-//.    ,---.      ,  \n            \\;'   /  ,' /  _  \\  /  _  \\   ,'/  \n                  \\   `'  / \\  `'  / \\  `.' /   \n                   `.___,'   `.__,'   `.__,'  	\n"         );
 				$display("\n");
-				$display("\nEnemy HP: [%d/%d]", current_enemy_health, current_enemy_max_health);
+				$display("\nEnemy HP: [%d/%d]        Enemy dmg: [%d]", current_enemy_health, current_enemy_max_health, current_enemy_damage);
 			
 
 
@@ -383,9 +401,9 @@ module main();
 				 $display("\n        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 				 $display("                                       MAP: Ashushat");
 				 $display("        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-				for(i = 0; i < 20; i = i + 1) begin
-					$write("                            ");
-					for(j = 0; j < 20; j = j + 1) begin
+				//for(i = 0; i < 20; i = i + 1) begin
+					//$write("                            ");
+/*					for(j = 0; j < 20; j = j + 1) begin
 						if(current_pos == i*20 + j) begin
 							$write("! " );
 						end
@@ -420,16 +438,65 @@ module main();
 								end																											
 							endcase							
 						end
+					end*/
+				//$write("Attempting to print map with coords ");
+				$write("                             ____________________ \n");
+				for(i = 0; i < map_size + 1; i = i + 1) begin
+					$write("                            |");	
+					for(j = 0; j < map_size + 1; j = j + 1) begin
+						if(y_coord - map_constant + i < 0| y_coord - map_constant + i > 19 | x_coord - map_constant + j < 0| x_coord - map_constant + j > 19)
+							$write("▄ " );
+						else if(current_pos == (y_coord - map_constant + i) * 20 + (x_coord - map_constant + j)) begin
+							$write("! " );
+						end
+						else if(bitmap[(y_coord - map_constant + i) * 20 + (x_coord - map_constant + j)] == 0 && no_shroud == 0) begin
+							$write("? " );
+						end
+						else begin
+							case(map[(y_coord - map_constant + i) * 20 + (x_coord - map_constant + j)])
+								`CURRENT: begin
+									$write("☺ ");
+								end
+								`ENTRANCE: begin
+									$write("< ");
+								end
+								`MAP_EXIT: begin
+									$write("> ");
+								end		
+								`BLANK: begin
+									$write("  ");
+								end
+								`WALL: begin
+									$write("▄ ");
+								end	
+								`ENEMY: begin
+									//$write("\nenemy type %d ", 20);
+									//$write("%x ", enemy_map[i*20+j][35:32]);
+									$write("@ ");
+									//$write("\nlocation: %d ", i*20 + j);
+								end	
+								`WEAPON: begin
+									$write("# ");
+								end
+								default: begin
+									$write("%d ", map[(y_coord - map_constant + i) * 20 + (x_coord - map_constant + j)]);
+								end																											
+							endcase							
+						end
 					end
-					$display("");
+					$display("|");
 				end
+				$write("                             ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯ \n");
+
+					//$display("");
+				//end
 			end
-			$display("\n                                   >> P L A Y E R   S T A T S <<");
-			$write("  = = = = = =        Level: [%d]       HP: [%d/%d]       Damage: [%d]       = = = = = =", player_level, player_health, player_max_health, player_damage);
+			$display("\n                                   >> P L A Y E R   S T A T S <<\n");
+			$display("  = = = = = =        Level: [%d]       HP: [%d/%d]       Damage: [%d]       = = = = = =", player_level, player_health, player_max_health, player_damage);
 			$display("\n  = = = = = =        EXP: [%d/%d]                                               = = = = = =\n", player_exp, player_next_exp);
 			/* Writing allowed commands */
 
-			$display("                                      >> C O M M A N D S <<");
+			$display("                                      >> C O M M A N D S <<\n");
 			if(!help_requested & can_move & !on_enemy)
 				$write("[1] - Right    [2] - Left    [3] - Up    [4] - Down    ");
 			if(!help_requested & on_enemy)
