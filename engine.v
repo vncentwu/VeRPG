@@ -12,10 +12,10 @@
 `define WEAPON 7 //gets mapped to a random weapon
 `define ITEM 8 //gets mapped to a random item
 
-/* Weapon IDs - reserved 10-20*/
+/* Weapon and ITEM IDs - reserved 10-20*/
 `define RUSTY_KNIFE 10
 `define AXE 11
-`define SWORD 12
+`define HEALTH_PACK 12
 `define SWORD1 13
 `define SWORD2 14
 `define SWORD3 15
@@ -84,28 +84,26 @@ module main();
 			map[i*20 + 18] = map_data[i][7:4];
 			map[i*20 + 19] = map_data[i][3:0];
 		end
-
-		//initialize bitmap to 0
-		for(i = 0; i < 20; i = i + 1) begin
+		for(i = 0; i < 20; i = i + 1) begin /* Initialized bit map to 0 */
 			for(j = 0; j < 20; j = j + 1) begin
 				bitmap[i*20 + j] = 0;		
 			end
 		end
+		counter = 0;
 		for(i = 0;i < 400; i = i+1) begin
-			if(i<200)
-				$display("storing at location i %d, %d ", i, i%10);
-
 			enemy_map[i][39:32] <= (i%10); //type		
 			enemy_map[i][31:24] <= 25 + (i%25); //health
-			$display("attempting to assign health: %d to %d", 25 + (i%25), i);
 			enemy_map[i][23:16] <= 25 + (i%25); //max health	
-			enemy_map[i][15:8] <= 5 + (i%3); //damage
-			//enemy_map[i][31:24] <= 25; //health
-			//enemy_map[i][23:16] <= 25; //max health	
-			//enemy_map[i][15:8] <= 5; //damage			
+			enemy_map[i][15:8] <= 5 + (i%3); //damage		
 			enemy_map[i][7:0] <= `ITEM; //drop	
 		end
+		counter = 0;
+		for(i = 0;i < 400; i = i+1) begin
+			item_map[i][15:8] <= (i%3); //item count		
+			item_map[i][7:0] <= `HEALTH_PACK; //item type	
+		end		
 	end
+
 
 
 	/* Debug values - GTKWAVE files become huge*/
@@ -116,6 +114,7 @@ module main();
 	integer f, number;
 	reg[9:0]i; 
 	reg[7:0]j;
+	reg[7:0]counter;
 
 	/* Enemy logic */ //4 bit for type, 8 bit for health, 8 bit for max health, 8 bit for damage, 4 bit for item drop
 	reg [39:0]enemy_map[0:1000]; //map of enemies
@@ -127,7 +126,8 @@ module main();
 	wire [8:0]current_enemy_damage = current_enemy[15:8];
 	wire [8:0]current_enemy_drop = current_enemy[7:0];
 
-
+	/* Item logic */
+	reg [39:0]item_map[0:1000]; //map of enemies
 
 	/* Map information */
 	reg [15:0]current_pos = 50;
@@ -143,6 +143,9 @@ module main();
 	wire bottom_2_clear = (current_pos + 40 < 400);
 	reg[15:0]map_size = 9;
 	wire[15:0]map_constant = (map_size - 1) / 2;
+	reg[15:0]max_enemies = 7;
+	reg[15:0]current_enemies = 0;
+
 
 	/* Player information */
 	reg [15:0]player_health = 100;
@@ -155,6 +158,7 @@ module main();
 
 	/* Game data */
 	wire on_enemy = map[current_pos] == `ENEMY;
+	wire on_item = map[current_pos] == `ITEM;
 	reg run_failed = 0;
 	reg can_move = 1;
 	reg can_fight = 0;
@@ -188,12 +192,14 @@ module main();
 	reg help_requested = 0;
 	reg[2:0] current_random = 0;
 	reg[2:0] run_random = 0;
+	reg[15:0] random_400 = 0;
 
 	/* Game constants */
 	reg[15:0] enemy_health_modifier = 20;
 	reg[15:0] enemy_damage_modifier = 3;
 
 	always @(posedge clk) begin
+			
 			
 		if(booting) begin
 			$display("Testing out location 196 %x", enemy_map[196][39:32]);
@@ -220,7 +226,11 @@ module main();
 		if(random_50 == 49)
 			random_50 <= 0;
 		else 
-			random_50 <= random_50 + 1;		
+			random_50 <= random_50 + 1;	
+		if(random_400 == 399)
+			random_400 <= 0;
+		else 
+			random_400 <= random_400 + 1;						
         random_weapon <= (random_10) + 10;
         random_enemy <= (random_10) + 20;
 		current_random <= random_4;
@@ -257,6 +267,20 @@ module main();
 			help_requested <= 0;
 		end
 		else if(new_command) begin //prints out current information
+			$display("Number of enemies %d", current_enemies);
+			if(random_10 < 2 & current_enemies < max_enemies) begin //spawning enemies
+				if(map[random_400] == `BLANK) begin
+					map[random_400] <= `ENEMY;
+					current_enemies <= current_enemies + 1;
+					enemy_map[random_400][39:32] <= (random_400%10); //type		
+					enemy_map[random_400][31:24] <= (25 + 10 * player_level + (random_400%25)); //health
+					$display("attempting to assign health: %d to %d", 25 + (random_400%25), random_400);
+					enemy_map[random_400][23:16] <= 25 + 10 * player_level + (random_400%25); //max health	
+					enemy_map[random_400][15:8] <= 5 + 2 * player_level + (random_400%3); //damage		
+					enemy_map[random_400][7:0] <= `ITEM; //drop	
+				end
+
+			end
 
 			$display("xcord: %d ", x_coord);
 			$display("ycord: %d ", y_coord);
@@ -305,6 +329,7 @@ module main();
 							player_damage <= player_damage + player_level * 2;
 							player_max_health <= player_max_health + player_level * 10;
 							player_health <= player_health + player_level * 10;
+							current_enemies <= current_enemies - 1;
 						end
 						else begin
 							player_exp <= player_exp +  enemy_map[current_pos][23:16];
