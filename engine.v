@@ -89,6 +89,9 @@ module main();
 				bitmap[i*20 + j] = 0;		
 			end
 		end
+		for(j = 0; j < 16; j = j + 1) begin
+			inventory_bitmap[j] = 0;		
+		end
 		counter = 0;
 		for(i = 0;i < 400; i = i+1) begin
 			enemy_map[i][39:32] <= (i%10); //type		
@@ -127,7 +130,7 @@ module main();
 	wire [8:0]current_enemy_drop = current_enemy[7:0];
 
 	/* Item logic */
-	reg [39:0]item_map[0:1000]; //map of enemies
+	reg [15:0]item_map[0:1000]; //map of enemies
 
 	/* Map information */
 	reg [15:0]current_pos = 50;
@@ -155,6 +158,8 @@ module main();
 	reg[8:0]player_damage = 10;
 	reg[15:0]player_exp = 0;
 	wire[15:0]player_next_exp = player_level * player_level + 50;
+	reg[15:0]inventory[0:3]; //16 inventory slots
+	reg[0:3]inventory_bitmap;
 
 	/* Game data */
 	wire on_enemy = map[current_pos] == `ENEMY;
@@ -295,6 +300,9 @@ module main();
 				else begin
 					player_health <= player_health - current_enemy_damage;
 				end
+				
+			end
+			else if(on_item) begin
 				
 			end
 			$display("current command: %d", current_command);
