@@ -17,8 +17,8 @@
 `define HEALTH_PACK_2 11
 `define HEALTH_PACK_3 12
 `define CLUB 13
-`define KNIFE_2 14
-`define RUSTY_SWORD_3 15
+`define KNIFE 14
+`define RUSTY_SWORD 15
 `define EXCALIBUR 16
 `define EXP_BOOST 17 //random percentage boost
 `define ITEM_6 18
@@ -105,10 +105,16 @@ module main();
 		end
 		counter = 0;
 		for(i = 0;i < 400; i = i+1) begin
-			item_map[i][15:8] <= (i%3); //item count		
-			item_map[i][7:0] <= 10 + (i%3); //item type	
-			$display("assigning item %d", 10 + (i%3));
-		end		
+
+			item_map[i][15:8] <= (i%3) +1; //item count
+			/*item_map[i][7:0] <= 10 + (i%7); //item type	*/
+			item_map[i][7:0] <= 10 + (i%8); //item type	
+			$display("assigning item %d with count", 10 + (i%8), i%3 + 1);
+		end	
+		weapon_damage_map[`CLUB] <= 10;
+		weapon_damage_map[`KNIFE] <= 15;
+		weapon_damage_map[`RUSTY_SWORD] <= 20;
+		weapon_damage_map[`EXCALIBUR] <= 255;	
 	end
 
 
@@ -123,6 +129,8 @@ module main();
 	reg[7:0]j;
 	reg[7:0]counter;
 	reg[7:0]variable;
+
+	reg[7:0]num_weapons = 4;
 
 	/* Enemy logic */ //4 bit for type, 8 bit for health, 8 bit for max health, 8 bit for damage, 4 bit for item drop
 	reg [39:0]enemy_map[0:1000]; //map of enemies
@@ -139,7 +147,7 @@ module main();
 	wire [31:0]current_item = item_map[current_pos];
 	wire[7:0]current_item_type = current_item[7:0];
 	wire[7:0]current_item_count = current_item[15:8];
-
+	reg[7:0]weapon_damage_map[0:400];
 
 	/* Map information */
 	reg [15:0]current_pos = 50;
@@ -164,7 +172,9 @@ module main();
 	reg [15:0]player_max_health = 100;
 	wire [15:0]player_health_ratio = (player_health * 10 / player_max_health);
 	reg [15:0]player_level = 1;
-	reg[8:0]player_damage = 10;
+	reg[8:0]player_damage = 0;
+	wire[7:0]player_total_damage = player_damage + player_weapon_damage;
+	reg[7:0]player_weapon_damage = 10;
 	reg[15:0]player_exp = 0;
 	wire[15:0]player_next_exp = player_level * player_level + 50;
 	reg[15:0]inventory[0:7]; //16 inventory slots
@@ -286,11 +296,14 @@ module main();
 		else if(inventory_requested)
 			inventory_requested <= 0;
 		else if(on_item) begin
-			map[current_pos] = `BLANK;
+			map[current_pos] <= `BLANK;
+			$display("count is %d", current_item_count);
+
 			for(j = 0; j < current_item_count; j = j+1) begin
 				for(i = 0; i < 16; i = i+1) begin
 					if(inventory[i] == 0) begin
 						$display("On item with type %d and count %d\n", current_item_type, current_item_count);
+						
 						inventory[i][7:0] = current_item_type;
 						i = 16;
 					end
@@ -310,12 +323,15 @@ module main();
 					enemy_map[random_400][15:8] <= 5 + 2 * player_level + (random_400%3); //damage		
 					enemy_map[random_400][7:0] <= `ITEM; //drop	
 				end
-
 			end
-
-			$display("xcord: %d ", x_coord);
-			$display("ycord: %d ", y_coord);
-
+			if(random_10 > 2 & random_10 < 5) begin //spawning items
+				if(map[random_400] == `BLANK) begin
+					map[random_400] <= `ITEM;
+					item_map[random_400][7:0] <= 10 + (random_400%8); //type		
+					item_map[random_400][15:8] <= random_400 % 3;
+					$display("attempting to assign health: %d to %d", 25 + (random_400%25), random_400);
+				end
+			end
 			display_queued <= 1;
 			$display("current pos is %d\n", map[current_pos]);
 			if(on_enemy) begin //if fighting an enemy
@@ -359,17 +375,31 @@ module main();
 							else begin
 								player_health <= player_health + player_max_health/5;
 							end
+						end
+						`EXP_BOOST: begin
+							if(player_exp + player_next_exp/2 >= player_next_exp) begin //level up
+								player_exp <= player_exp + player_next_exp/2 - player_next_exp; //exp proportional to enemy hp
+								player_level <= player_level + 1;
+								player_damage <= player_damage + player_level * 4;
+								player_max_health <= player_max_health + player_level * 10;
+								player_health <= player_health + player_level * 10;
+								current_enemies <= current_enemies - 1;
+							end
+							else begin
+								player_exp <= player_exp + player_next_exp/2;
+							end
 						end	
 					endcase
-					if(inventory[input_data[eip]] > `CLUB - 1 | inventory[input_data[eip]] < `EXCALIBUR + 1) begin //weapon range
-						player_weapon = inventory[input_data[eip]];
-							for(i = 0; i < 16; i = i+1) begin
-								if(inventory[i] == 0) begin
-									$display("On item with type %d and count %d\n", current_item_type, current_item_count);
-									inventory[i][7:0] = player_weapon;
-									i = 16;
-								end
-							end									
+					if(inventory[input_data[eip]] > 12 & inventory[input_data[eip]] < 18) begin //weapon range
+						player_weapon <= inventory[input_data[eip]];
+						player_weapon_damage <= weapon_damage_map[inventory[input_data[eip]]];
+						for(i = 0; i < 16; i = i+1) begin
+							if(inventory[i] == 0) begin
+								$display("On item with type %d and count %d\n", current_item_type, current_item_count);
+								inventory[i][7:0] <= player_weapon;
+								i = 16;
+							end
+						end									
 					end
 
 					inventory[input_data[eip]] = 0;
@@ -402,13 +432,13 @@ module main();
 								current_pos <= current_pos + 20;
 					end
 					`ATTACK: begin //attack
-						if(enemy_map[current_pos][31:24] <= player_damage) begin //if kill, remove and update
+						if(enemy_map[current_pos][31:24] < player_total_damage + 1) begin //if kill, remove and update
 							enemy_map[current_pos] <= 0;
 							map[current_pos] <= `BLANK;
 							if(player_exp + enemy_map[current_pos][23:16] >= player_next_exp) begin //level up
 								player_exp <= player_exp + enemy_map[current_pos][23:16] - player_next_exp; //exp proportional to enemy hp
 								player_level <= player_level + 1;
-								player_damage <= player_damage + player_level * 2;
+								player_damage <= player_damage + player_level * 4;
 								player_max_health <= player_max_health + player_level * 10;
 								player_health <= player_health + player_level * 10;
 								current_enemies <= current_enemies - 1;
@@ -418,7 +448,7 @@ module main();
 							end
 						end
 						else
-							enemy_map[current_pos][31:24] <= enemy_map[current_pos][31:24] - player_damage;
+							enemy_map[current_pos][31:24] <= enemy_map[current_pos][31:24] - player_total_damage;
 	 				end	
 					`EXIT: begin 
 						$finish;
@@ -484,7 +514,6 @@ module main();
 
 			if(!new_command)
 				display_queued <= 0; 
-			f = $fopen("output.data");
 			
 			if(run_failed) begin
 				$display("RUN FAILED");
@@ -507,7 +536,8 @@ module main();
 				$display("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");				
 			end
 			if(inventory_requested) begin //printing inventory
-				$display("Inventory\n");
+				$display("I N V E N T O R Y");
+				$display("_________________");
 				for(i = 0; i < 5; i = i+1) begin
 					for(j = 0; j < 3; j = j+1) begin
 						variable = i + j*3;
@@ -521,7 +551,22 @@ module main();
 							end
 							`HEALTH_PACK_3: begin
 								$write("Health potion III");
-							end														
+							end
+							`CLUB: begin
+								$write("Club             ");
+							end							
+							`KNIFE: begin
+								$write("Knife            ");
+							end						
+							`RUSTY_SWORD: begin
+								$write("Rusty sword      ");
+							end
+							`EXCALIBUR: begin
+								$write("Excalibur        ");
+							end
+							`EXP_BOOST: begin
+								$write("EXP boost        ");
+							end
 							default:
 								$write("                 ");
 						endcase
@@ -545,9 +590,12 @@ module main();
 
 			end
 			else begin
-				 $display("\n        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-				 $display("                                       MAP: Ashushat");
-				 $display("        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+				 //$display("\n        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+				 $display("\n____________________________________________________________________________________________________");
+				 $display("  [M A P:  A S H U S H A T ]");
+				 $display("   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
+				 //$display("____________________________________________________________________________________________________");
+				 //$display("        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 				//for(i = 0; i < 20; i = i + 1) begin
 					//$write("                            ");
 /*					for(j = 0; j < 20; j = j + 1) begin
@@ -587,14 +635,14 @@ module main();
 						end
 					end*/
 				//$write("Attempting to print map with coords ");
-				$write("                             ____________________ \n");
+				$write("              ____________________ \n");
 				for(i = 0; i < map_size + 1; i = i + 1) begin
-					$write("                            |");	
+					$write("             |");	
 					for(j = 0; j < map_size + 1; j = j + 1) begin
 						if(y_coord - map_constant + i < 0| y_coord - map_constant + i > 19 | x_coord - map_constant + j < 0| x_coord - map_constant + j > 19)
 							$write("▄ " );
 						else if(current_pos == (y_coord - map_constant + i) * 20 + (x_coord - map_constant + j)) begin
-							$write("! " );
+							$write("P " );
 						end
 						else if(bitmap[(y_coord - map_constant + i) * 20 + (x_coord - map_constant + j)] == 0 && no_shroud == 0) begin
 							$write("? " );
@@ -617,10 +665,10 @@ module main();
 									$write("▄ ");
 								end	
 								`ENEMY: begin
-									$write("@ ");
+									$write("E ");
 								end	
 								`ITEM: begin
-									$write("# ");
+									$write("I ");
 								end
 								default: begin
 									$write("%d ", map[(y_coord - map_constant + i) * 20 + (x_coord - map_constant + j)]);
@@ -630,33 +678,52 @@ module main();
 					end
 					$display("|");
 				end
-				$write("                             ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯ \n");
+				$write("              ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯ \n");
 			end
-			$display("\n                                   >> P L A Y E R   S T A T S <<\n");
-			$display("  = = = = = =        Level: [%d]       HP: [%d/%d]       Damage: [%d]       = = = = = =", player_level, player_health, player_max_health, player_damage);
-			$display("\n  = = = = = =        EXP: [%d/%d]                                               = = = = = =\n", player_exp, player_next_exp);
+			$display("____________________________________________________________________________________________________"); 
+			$display("  [ P L A Y E R   S T A T S ]");
+			$display("   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
+			$display("    Level: [%d]       HP: [%d/%d]        Damage: [%d]    ", player_level, player_health, player_max_health, player_total_damage);
+			$write("\n    EXP: [%d/%d]   Weapon: [", player_exp, player_next_exp);
+			case(player_weapon)
+				`CLUB: begin
+					$write("Club]           ");
+				end
+				`KNIFE: begin
+					$write("Knife]          ");
+				end
+				`RUSTY_SWORD: begin
+					$write("Rusty Sword]    ");
+				end
+				`EXCALIBUR: begin
+					$write("Excalibur]      ");
+				end
+			endcase
+			$write("Weapon Damage: [%d]   ", player_weapon_damage);
+			$display("\n");
+			$display("____________________________________________________________________________________________________");                                              
 			
 			/* Writing allowed commands */
-			$display("                                      >> C O M M A N D S <<\n");
+			$display("  [ C O M M A N D S ]");
+			$display("   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
 			if(inventory_requested)
-				$write("[0-F] - Use corresponding inventory item    ");
+				$write("[0-F] - Use corresponding inventory item    \n");
 			if(!help_requested & can_move & !on_enemy & !inventory_requested)
-				$write("[1] - Right    [2] - Left    [3] - Up    [4] - Down    \n");
+				$write("[1] - Right        [2] - Left         [3] - Up           [4] - Down    \n");
 			if(!help_requested & on_enemy & !inventory_requested)
 				$write("[5] - Attack    [6] - Run    ");
 			if(!help_requested & can_hacks & !inventory_requested)
 				$write("[A] - No shroud    ");
 			if(!help_requested)
-				$write("[B] - Help    ");
+				$write("[B] - Help         ");
 			if(help_requested | inventory_requested)	
-				$write("[C] - Ok    ");
+				$write("[C] - Ok           ");
 			if(!inventory_requested & !help_requested & !on_enemy)	
 				$write("[D] - Inventory    ");	
 			$write("[F] - Exit    ");
 			if(inventory_requested)
-				$write("[10] - Cancel    ");
-			$display("\n");
-			$fclose(f);
+				$write("[10] - Cancel      ");
+			$display("\n____________________________________________________________________________________________________");   
 		end
 	end
 
