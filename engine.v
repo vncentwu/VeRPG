@@ -98,9 +98,9 @@ module main();
 		counter = 0;
 		for(i = 0;i < 400; i = i+1) begin
 			enemy_map[i][39:32] <= (i%10); //type		
-			enemy_map[i][31:24] <= 25 + (i%25); //health
-			enemy_map[i][23:16] <= 25 + (i%25); //max health	
-			enemy_map[i][15:8] <= 5 + (i%3); //damage		
+			enemy_map[i][31:24] <= 40 + (i%25); //health
+			enemy_map[i][23:16] <= 40 + (i%25); //max health	
+			enemy_map[i][15:8] <= 7 + (i%3); //damage		
 			enemy_map[i][7:0] <= `ITEM; //drop	
 		end
 		counter = 0;
@@ -150,7 +150,7 @@ module main();
 	reg[7:0]weapon_damage_map[0:400];
 
 	/* Map information */
-	reg [15:0]current_pos = 50;
+	reg [15:0]current_pos = 190;
 	wire[15:0]x_coord = current_pos % 20;
 	wire[15:0]y_coord = (current_pos - (current_pos % 20)) / 20;
 	wire left_clear = (current_pos - 1 > 0 && (current_pos - 1) % 20 < current_pos % 20);
@@ -317,9 +317,9 @@ module main();
 					map[random_400] <= `ENEMY;
 					current_enemies <= current_enemies + 1;
 					enemy_map[random_400][39:32] <= (random_400%10); //type		
-					enemy_map[random_400][31:24] <= (25 + 10 * player_level + (random_400%25)); //health
+					enemy_map[random_400][31:24] <= (40 + 10 * player_level * player_level + (random_400%25)); //health
 					$display("attempting to assign health: %d to %d", 25 + (random_400%25), random_400);
-					enemy_map[random_400][23:16] <= 25 + 10 * player_level + (random_400%25); //max health	
+					enemy_map[random_400][23:16] <= 40 + 10 * player_level * player_level  + (random_400%25); //max health	
 					enemy_map[random_400][15:8] <= 5 + 2 * player_level + (random_400%3); //damage		
 					enemy_map[random_400][7:0] <= `ITEM; //drop	
 				end
@@ -536,11 +536,12 @@ module main();
 				$display("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");				
 			end
 			if(inventory_requested) begin //printing inventory
-				$display("I N V E N T O R Y");
-				$display("_________________");
+				$display("____________________________________________________________________________________________________"); 
+				$display("  [ I N V E N T O R Y ]");
+				$display("   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
 				for(i = 0; i < 5; i = i+1) begin
 					for(j = 0; j < 3; j = j+1) begin
-						variable = i + j*3;
+						variable = j + i*3;
 						$write("[%x] ", variable[4:0]);
 						case(inventory[variable])
 							`HEALTH_PACK: begin
@@ -583,11 +584,6 @@ module main();
 				$display("                   ,===:'.,            `-._ \n                    `:.`---.__         `-._   \n                      `:.     `--.         `.   \n                        \\.        `.         `.   \n                (,,(,    \\.         `.   ____,-`.,  \n             (,'     `/   \\.   ,--.___`.'   \n         ,  ,'  ,--.  `,   \\.;'         `   \n          `{D, {    \\  :    \\;   \n            V,,'    /  /    //   \n            j;;    /  ,' ,-//.    ,---.      ,  \n            \\;'   /  ,' /  _  \\  /  _  \\   ,'/  \n                  \\   `'  / \\  `'  / \\  `.' /   \n                   `.___,'   `.__,'   `.__,'  	\n"         );
 				$display("\n");
 				$display("\nEnemy HP: [%d/%d]        Enemy dmg: [%d]", current_enemy_health, current_enemy_max_health, current_enemy_damage);
-			end
-			else if(on_item) begin //draw item stuff if reached enemy begin
-				//$finish;
-				//$display("On item with type %d\n", current_item_type);
-
 			end
 			else begin
 				 //$display("\n        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
