@@ -20,7 +20,7 @@ int main (){
 	usleep(2 * 1000 * 100);
 	while(1)
 	{
-		cout << "> ";
+		cout << "____________________________________________________________________________________________________\n> ";
 		cin.getline(data, 3);
 		file.open("input.data", std::ios::app); //appends to end of file
 		file << data << endl;
