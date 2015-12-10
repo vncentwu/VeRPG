@@ -109,7 +109,7 @@ module main();
 			item_map[i][15:8] <= (i%3) +1; //item count
 			/*item_map[i][7:0] <= 10 + (i%7); //item type	*/
 			item_map[i][7:0] <= 10 + (i%8); //item type	
-			$display("assigning item %d with count", 10 + (i%8), i%3 + 1);
+			//$display("assigning item %d with count", 10 + (i%8), i%3 + 1);
 		end	
 		weapon_damage_map[`CLUB] <= 10;
 		weapon_damage_map[`KNIFE] <= 15;
@@ -184,6 +184,7 @@ module main();
 	/* Game data */
 	wire on_enemy = map[current_pos] == `ENEMY;
 	wire on_item = map[current_pos] == `ITEM;
+	wire on_exit = map[current_pos] == `MAP_EXIT;
 	reg run_failed = 0;
 	reg can_move = 1;
 	reg can_fight = 0;
@@ -229,13 +230,19 @@ module main();
 			
 			
 		if(booting) begin
-			$display("Testing out location 196 %x", enemy_map[196][39:32]);
-			$display("Testing out location 196 full %x", enemy_map[196]);
+			//$display("Testing out location 196 %x", enemy_map[196][39:32]);
+			//$display("Testing out location 196 full %x", enemy_map[196]);
 			booting <= 0;
 		end
 
 		//$display("Testing out location 196 fukll %x", enemy_map[i*20+j]);
-
+			if(on_exit) begin
+				$display("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+				$display("\n\nCongratulations on reaching the end! You completed the game at level %d.", player_level);
+				$display("Input 'F' to exit...");
+				$display("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+				$finish;				
+			end
 
 		/* Random logic */
 		if(random_3 == 2)
@@ -297,12 +304,12 @@ module main();
 			inventory_requested <= 0;
 		else if(on_item) begin
 			map[current_pos] <= `BLANK;
-			$display("count is %d", current_item_count);
+			//$display("count is %d", current_item_count);
 
 			for(j = 0; j < current_item_count; j = j+1) begin
 				for(i = 0; i < 16; i = i+1) begin
 					if(inventory[i] == 0) begin
-						$display("On item with type %d and count %d\n", current_item_type, current_item_count);
+						//$display("On item with type %d and count %d\n", current_item_type, current_item_count);
 						
 						inventory[i][7:0] = current_item_type;
 						i = 16;
@@ -311,14 +318,14 @@ module main();
 			end
 		end
 		else if(new_command) begin //prints out current information
-			$display("Number of enemies %d", current_enemies);
+			//$display("Number of enemies %d", current_enemies);
 			if(random_10 < 2 & current_enemies < max_enemies) begin //spawning enemies
 				if(map[random_400] == `BLANK) begin
 					map[random_400] <= `ENEMY;
 					current_enemies <= current_enemies + 1;
 					enemy_map[random_400][39:32] <= (random_400%10); //type		
 					enemy_map[random_400][31:24] <= (40 + 10 * player_level * player_level + (random_400%25)); //health
-					$display("attempting to assign health: %d to %d", 25 + (random_400%25), random_400);
+					//$display("attempting to assign health: %d to %d", 25 + (random_400%25), random_400);
 					enemy_map[random_400][23:16] <= 40 + 10 * player_level * player_level  + (random_400%25); //max health	
 					enemy_map[random_400][15:8] <= 5 + 2 * player_level + (random_400%3); //damage		
 					enemy_map[random_400][7:0] <= `ITEM; //drop	
@@ -329,16 +336,18 @@ module main();
 					map[random_400] <= `ITEM;
 					item_map[random_400][7:0] <= 10 + (random_400%8); //type		
 					item_map[random_400][15:8] <= random_400 % 3;
-					$display("attempting to assign health: %d to %d", 25 + (random_400%25), random_400);
+					//$display("attempting to assign health: %d to %d", 25 + (random_400%25), random_400);
 				end
 			end
 			display_queued <= 1;
-			$display("current pos is %d\n", map[current_pos]);
+			//$display("current pos is %d\n", map[current_pos]);
+
 			if(on_enemy) begin //if fighting an enemy
 
 				if(player_health <= current_enemy_damage) begin
 					$display("\n\nOh no! You have died. You finished the game at level %d! Better luck next time.", player_level);
 					$display("Plans to implement respawning later...");
+					$display("Input 'F' to exit...");
 					$finish;
 				end
 				else begin
@@ -351,7 +360,7 @@ module main();
 				//$display("On item with type %d\n", current_item_type);
 
 			end
-			$display("current command: %d", current_command);
+			//$display("current command: %d", current_command);
 			if(use_inventory_input) begin //item logic
 				if(inventory[input_data[eip]] != 0) begin //use the item
 					case(inventory[input_data[eip]])
@@ -395,7 +404,7 @@ module main();
 						player_weapon_damage <= weapon_damage_map[inventory[input_data[eip]]];
 						for(i = 0; i < 16; i = i+1) begin
 							if(inventory[i] == 0) begin
-								$display("On item with type %d and count %d\n", current_item_type, current_item_count);
+								//$display("On item with type %d and count %d\n", current_item_type, current_item_count);
 								inventory[i][7:0] <= player_weapon;
 								i = 16;
 							end
@@ -483,7 +492,7 @@ module main();
 					end												
 					`NO_SHROUD: begin //no shroud
 						no_shroud <= !no_shroud;
-						$display("No shroud");
+						//$display("No shroud");
 					end
 					`HELP: begin
 						help_requested <= 1;
@@ -492,7 +501,7 @@ module main();
 						inventory_requested <= 1;
 					end				
 					`OK: begin
-						$display("ok");
+						//$display("ok");
 					end
 
 
@@ -516,7 +525,7 @@ module main();
 				display_queued <= 0; 
 			
 			if(run_failed) begin
-				$display("RUN FAILED");
+				//$display("RUN FAILED");
 				run_failed <= 0;
 			end
 			for(j = 0; j < 20; j = j + 1) begin
@@ -531,11 +540,18 @@ module main();
 				$display("Welcome to > VeRiPG: Day of Proxies < !");
 				$display("VeRiPG is a text-based RPG created using Verilog, a hardware simulation language.");
 				$display("Playing is very simple. At each turn, the map is displayed and a list of allowed commands are listed below.");
-				$display("The goal is to navigate your player to the exit, all the while leveling your character and staying alive.");
+				$display("The goal is to navigate your player to the exit marked by (>), all the while leveling your character and staying alive.");
 				$display("Though the maps are preloaded, the user is free to modify the map files as they wish. Have fun!\n");
+				$display("PLAYER >>  Your character can level up using exp boosts or defeating enemies. As you level up, your character will become stronger, but so will your enemies.\n");
+				$display("NAVIGATION >> You can navigate through the map by inputting the corresponding values listed under 'COMMANDS'\nYou have limited vision, so until you near an area, it will be surrounded by shroud (?)");
+				$display("COMBAT >> Enemies are marked on the map as the letter 'E'. VeRiPG is a turn-based game, meaning during battles, you can perform one action, and your enemy will perform an action.\nWhile in combat, you can either choose to fight back or run away.  The amount of damage dealt is the damage of your \ncharacter combined with the damage of your weapon, which is listed under 'PLAYER STATS'.\n");
+				$display("ITEMS AND INVENTORY >> Items are marked on the map as the letter 'I'. Walking on top of an item will pick up the item. Items can be viewed and used by opening up the inventory interface with\nthe input 'D'. While in the inventory, inputting the corresponding hex value will use that item.\nCurrently there are two types of items, consumables and weapons. Consumables can be used once, and weapons will be equipped, unequipping your current weapon.\n");
+
+				$display("LEGEND >> [P] - current location      [E] - enemy      [>] - exit      [?] - shroud      [▄] - Wall      [I] - Item\n");
+
 				$display("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");				
 			end
-			if(inventory_requested) begin //printing inventory
+			else if(inventory_requested) begin //printing inventory
 				$display("____________________________________________________________________________________________________"); 
 				$display("  [ I N V E N T O R Y ]");
 				$display("   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
@@ -676,29 +692,30 @@ module main();
 				end
 				$write("              ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯ \n");
 			end
-			$display("____________________________________________________________________________________________________"); 
-			$display("  [ P L A Y E R   S T A T S ]");
-			$display("   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
-			$display("    Level: [%d]       HP: [%d/%d]        Damage: [%d]    ", player_level, player_health, player_max_health, player_total_damage);
-			$write("\n    EXP: [%d/%d]   Weapon: [", player_exp, player_next_exp);
-			case(player_weapon)
-				`CLUB: begin
-					$write("Club]           ");
-				end
-				`KNIFE: begin
-					$write("Knife]          ");
-				end
-				`RUSTY_SWORD: begin
-					$write("Rusty Sword]    ");
-				end
-				`EXCALIBUR: begin
-					$write("Excalibur]      ");
-				end
-			endcase
-			$write("Weapon Damage: [%d]   ", player_weapon_damage);
-			$display("\n");
-			$display("____________________________________________________________________________________________________");                                              
-			
+			if(!help_requested) begin
+				$display("____________________________________________________________________________________________________"); 
+				$display("  [ P L A Y E R   S T A T S ]");
+				$display("   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
+				$display("    Level: [%d]       HP: [%d/%d]        Damage: [%d]    ", player_level, player_health, player_max_health, player_total_damage);
+				$write("\n    EXP: [%d/%d]   Weapon: [", player_exp, player_next_exp);
+				case(player_weapon)
+					`CLUB: begin
+						$write("Club]           ");
+					end
+					`KNIFE: begin
+						$write("Knife]          ");
+					end
+					`RUSTY_SWORD: begin
+						$write("Rusty Sword]    ");
+					end
+					`EXCALIBUR: begin
+						$write("Excalibur]      ");
+					end
+				endcase
+				$write("Weapon Damage: [%d]   ", player_weapon_damage);
+				$display("\n");
+				$display("____________________________________________________________________________________________________");                                              
+			end
 			/* Writing allowed commands */
 			$display("  [ C O M M A N D S ]");
 			$display("   ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
